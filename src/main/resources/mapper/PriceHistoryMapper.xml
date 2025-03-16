@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD MyBatis Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.listingservice.mapper.PriceHistoryMapper">
+    <insert id="insert" parameterType="com.example.listingservice.model.PriceHistory" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO price_history (listing_id, price)
+        VALUES (#{listingId}, #{price});
+    </insert>
+
+    <delete id="deleteByListingId">
+        DELETE FROM price_history WHERE listing_id = #{listingId};
+    </delete>
+
+    <select id="getPriceHistoryByListingId" resultType="PriceHistory">
+        SELECT * FROM price_history WHERE id = #{id};
+    </select>
+
+
+
+</mapper>

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD MyBatis Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.listingservice.mapper.ListingMapper">
+
+    <!-- 获取所有房源 -->
+    <select id="getAllListings" resultType="com.example.listingservice.model.Listing">
+        SELECT * FROM listing;
+    </select>
+
+    <!-- 根据房源ID获取房源 -->
+    <select id="getListingById" resultType="com.example.listingservice.model.Listing">
+        SELECT * FROM listing WHERE id = #{id};
+    </select>
+
+    <!-- 根据房源类型ID获取房源 -->
+    <select id="getListingsByType" resultType="com.example.listingservice.model.Listing">
+        SELECT * FROM listing WHERE listing_type_id = #{listingTypeId};
+    </select>
+
+    <!-- 创建房源 -->
+    <insert id="insert" parameterType="com.example.listingservice.model.Listing" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO listing (title, description, address, latitude, longitude, listing_type_id, host_id, price)
+        VALUES (#{title}, #{description}, #{address}, #{latitude}, #{longitude}, #{listingTypeId}, #{hostId}, #{price});
+    </insert>
+
+    <!-- 更新房源 -->
+    <update id="updateListing" parameterType="com.example.listingservice.dto.ListingUpdateDTO">
+        UPDATE listing
+        <set>
+            title = #{title},
+            description = #{description},
+            address = #{address},
+            latitude = #{latitude},
+            longitude = #{longitude},
+            listing_type_id = #{listingTypeId},
+            price = #{price},
+            status = #{status}
+        </set>
+        WHERE id = #{id};
+    </update>
+
+    <update id="updateListingRating">
+        UPDATE listing
+        <set>
+            rating = #{rating}
+        </set>
+        WHERE id = #{id}
+    </update>
+
+
+
+    <!-- 删除房源 -->
+    <delete id="deleteListing">
+        DELETE FROM listing WHERE id = #{id};
+    </delete>
+
+
+    <select id="searchListingsByFilters" parameterType="com.example.listingservice.dto.ListingSearchDTO" resultType="com.example.feignapi.vo.ListingCard">
+        SELECT DISTINCT
+        l.id,
+        l.title,
+        l.description,
+        l.price,
+        l.address,
+        l.rating,
+        l.bedrooms,
+        l.bathrooms,
+        l.is_favorite,
+        lt.name AS listingType
+        FROM listing l
+        LEFT JOIN listing_type lt ON l.listing_type_id = lt.id
+        <!-- 如果有设施条件，需要关联listing_amenity表和amenity表 -->
+        <if test="filters != null and filters.amenities != null and filters.amenities.size() > 0">
+            INNER JOIN listing_amenity la ON l.id = la.listing_id
+            INNER JOIN amenity a ON la.amenity_id = a.id
+        </if>
+        WHERE 1=1
+        <!-- 地址搜索 -->
+        <if test="address != null and address != ''">
+            AND l.address LIKE CONCAT('%', #{address}, '%')
+        </if>
+        <!-- 价格范围过滤 -->
+        <if test="filters != null and filters.priceRange != null">
+            <if test="filters.priceRange[0] != null">
+                AND l.price >= #{filters.priceRange[0]}
+            </if>
+            <if test="filters.priceRange[1] != null">
+                AND l.price &lt;= #{filters.priceRange[1]}
+            </if>
+        </if>
+        <!-- 房屋类型过滤 -->
+        <if test="filters != null and filters.propertyType != null and filters.propertyType.size() > 0">
+            AND lt.name IN
+            <foreach collection="filters.propertyType" item="type" open="(" separator="," close=")">
+                #{type}
+            </foreach>
+        </if>
+        <!-- 卧室数量过滤 -->
+        <if test="filters != null and filters.bedrooms != null and filters.bedrooms != ''">
+            AND l.bedrooms = #{filters.bedrooms}
+        </if>
+        <!-- 浴室数量过滤 -->
+        <if test="filters != null and filters.bathrooms != null and filters.bathrooms != ''">
+            AND l.bathrooms = #{filters.bathrooms}
+        </if>
+        <!-- 设施过滤 -->
+        <if test="filters.amenities != null and filters.amenities.size() > 0">
+            AND l.id IN (
+                SELECT la.listing_id
+                FROM listing_amenity la
+                JOIN amenity a ON la.amenity_id = a.id
+                WHERE a.name IN
+                <foreach collection="filters.amenities" item="amenity" open="(" separator="," close=")">
+                    #{amenity}
+                </foreach>
+                GROUP BY la.listing_id
+                HAVING COUNT(DISTINCT a.name) = #{filters.amenitiesCount}
+            )
+        </if>
+        <!-- 默认状态为可用 -->
+        AND l.status = 1
+        ORDER BY l.id
+    </select>
+
+</mapper>
