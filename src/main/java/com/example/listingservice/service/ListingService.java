@@ -4,6 +4,7 @@ import com.example.feignapi.vo.ListingCard;
 import com.example.listingservice.dto.ListingCreateDTO;
 import com.example.listingservice.dto.ListingSearchDTO;
 import com.example.listingservice.dto.ListingUpdateDTO;
+import com.example.listingservice.dto.ListingUpdateFavoriteDTO;
 
 import java.util.List;
 
@@ -21,4 +22,6 @@ public interface ListingService {
     List<ListingCard> searchListings(ListingSearchDTO listingSearchDTO);
 
     void updateListingRating(Long id, Double rating);
+
+    void updateFavorite(Long id, ListingUpdateFavoriteDTO isFavorite);
 }

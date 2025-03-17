@@ -9,6 +9,7 @@ import com.example.feignapi.vo.UserVO;
 import com.example.listingservice.dto.ListingCreateDTO;
 import com.example.listingservice.dto.ListingSearchDTO;
 import com.example.listingservice.dto.ListingUpdateDTO;
+import com.example.listingservice.dto.ListingUpdateFavoriteDTO;
 import com.example.listingservice.mapper.ListingMapper;
 import com.example.listingservice.mapper.PriceHistoryMapper;
 import com.example.listingservice.model.Listing;
@@ -226,6 +227,12 @@ public class ListingServiceImpl implements ListingService {
     @Override
     public void updateListingRating(Long id, Double rating) {
         listingMapper.updateListingRating(id,rating);
+    }
+
+    @Override
+    public void updateFavorite(Long id, ListingUpdateFavoriteDTO isFavorite) {
+
+        listingMapper.updateFavorite(id,isFavorite);
     }
 
 

@@ -90,9 +90,9 @@
             </if>
         </if>
         <!-- 房屋类型过滤 -->
-        <if test="filters != null and filters.propertyType != null and filters.propertyType.size() > 0">
+        <if test="filters != null and filters.listingType != null and filters.listingType.size() > 0">
             AND lt.name IN
-            <foreach collection="filters.propertyType" item="type" open="(" separator="," close=")">
+            <foreach collection="filters.listingType" item="type" open="(" separator="," close=")">
                 #{type}
             </foreach>
         </if>
@@ -105,7 +105,7 @@
             AND l.bathrooms = #{filters.bathrooms}
         </if>
         <!-- 设施过滤 -->
-        <if test="filters.amenities != null and filters.amenities.size() > 0">
+        <if test="filters != null and filters.amenities != null and filters.amenities.size() > 0">
             AND l.id IN (
                 SELECT la.listing_id
                 FROM listing_amenity la
@@ -122,5 +122,14 @@
         AND l.status = 1
         ORDER BY l.id
     </select>
+
+
+    <update id="updateFavorite">
+        UPDATE listing
+        <set>
+            is_favorite = #{isFavorite}
+        </set>
+        WHERE id = #{id}
+    </update>
 
 </mapper>

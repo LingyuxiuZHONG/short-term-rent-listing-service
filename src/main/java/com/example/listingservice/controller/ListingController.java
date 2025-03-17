@@ -6,6 +6,7 @@ import com.example.feignapi.vo.ListingCard;
 import com.example.listingservice.dto.ListingCreateDTO;
 import com.example.listingservice.dto.ListingSearchDTO;
 import com.example.listingservice.dto.ListingUpdateDTO;
+import com.example.listingservice.dto.ListingUpdateFavoriteDTO;
 import com.example.listingservice.service.ListingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -61,9 +62,9 @@ public class ListingController {
     }
 
 
-    @DeleteMapping("/{listingId}")
-    public ResponseEntity<ApiResponse<String>> deleteListing(@PathVariable Long listingId){
-        listingService.deleteListing(listingId);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<String>> deleteListing(@PathVariable Long id){
+        listingService.deleteListing(id);
         return ResponseEntity.ok(ApiResponse.success("房源删除成功"));
     }
 
@@ -72,6 +73,14 @@ public class ListingController {
         List<ListingCard> listingCardList = listingService.searchListings(listingSearchDTO);
         return ResponseEntity.ok(ApiResponse.success("查询成功", listingCardList));
     }
+
+    @PutMapping("/{id}/favorite")
+    public ResponseEntity<ApiResponse<String>> updateFavorite(@PathVariable Long id, @RequestBody ListingUpdateFavoriteDTO listingUpdateFavoriteDTO) {
+        listingService.updateFavorite(id, listingUpdateFavoriteDTO);
+        return ResponseEntity.ok(ApiResponse.success("更新成功"));
+    }
+
+
 
 
 
