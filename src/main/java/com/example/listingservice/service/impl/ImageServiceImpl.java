@@ -9,12 +9,10 @@ import com.example.listingservice.service.ImageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 
 @Service
@@ -29,44 +27,20 @@ public class ImageServiceImpl implements ImageService {
     private String uploadDir;
 
     @Override
-    public List<Image> uploadImages(List<MultipartFile> imageFiles, Long listingId) {
+    public void uploadImages(List<String> fileUrls, Long listingId) {
         // 校验房源是否存在
         Listing listing = listingMapper.getListingById(listingId);
         if (listing == null) {
             throw new BusinessException("房源不存在");
         }
 
-        List<Image> images = new ArrayList<>();
-
-        File directory = new File(uploadDir + listingId);
-        if(!directory.exists()){
-            directory.mkdirs();
+        List<Image> list = new ArrayList<>();
+        for(String url : fileUrls){
+            list.add(new Image(listingId,url));
         }
 
-        try {
-            for (MultipartFile imageFile : imageFiles) {
-                String fileName = UUID.randomUUID().toString();
-                File file = new File(directory, fileName);
+        imageMapper.insertImages(list);
 
-                imageFile.transferTo(file);
-
-                String fileUrl = "/images/" + listingId + "/" + fileName;
-
-                Image image = new Image();
-                image.setImageURL(fileUrl);
-                image.setListingId(listingId);
-
-                imageMapper.insert(image);
-
-                images.add(image);
-
-
-            }
-        }catch (Exception e){
-            throw new BusinessException("上传图片失败");
-        }
-
-        return images;
     }
 
     @Override
@@ -76,7 +50,7 @@ public class ImageServiceImpl implements ImageService {
             throw new BusinessException("图片未找到");
         }
 
-        String imageUrl = image.getImageURL();
+        String imageUrl = image.getImageUrl();
         File file = new File(imageUrl);
 
         if(file.exists()){
@@ -92,5 +66,11 @@ public class ImageServiceImpl implements ImageService {
     @Override
     public void deleteImagesByListingId(Long listingId) {
         imageMapper.deleteImageByListingId(listingId);
+    }
+
+    @Override
+    public List<String> getImagesUrlsByListingId(Long listingId) {
+
+        return imageMapper.getImagesByListingId(listingId);
     }
 }

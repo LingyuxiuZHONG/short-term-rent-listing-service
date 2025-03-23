@@ -19,14 +19,13 @@ public class ImageController {
 
 
     @PostMapping("/{listingId}/images")
-    public ResponseEntity<ApiResponse<List<Image>>> uploadImages(
+    public ResponseEntity<ApiResponse<String>> uploadImages(
             @PathVariable Long listingId,
-            @RequestParam("imageFiles") List<MultipartFile> imageFiles){
+            @RequestParam("imageFiles") List<String> fileUrls){
 
-        // 上传图片并获取图片 URLs
-        List<Image> images = imageService.uploadImages(imageFiles, listingId);
+        imageService.uploadImages(fileUrls, listingId);
 
-        return ResponseEntity.ok(ApiResponse.success("图片上传成功", images));
+        return ResponseEntity.ok(ApiResponse.success("图片上传成功"));
     }
 
 

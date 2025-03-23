@@ -23,5 +23,5 @@ public class Listing {
     private Integer bedrooms;
     private Integer bathrooms;
     private Double rating;
-    private Boolean isFavorite;
+    private Integer maxGuests;
 }

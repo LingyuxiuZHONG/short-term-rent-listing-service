@@ -9,6 +9,11 @@ import java.time.LocalDateTime;
 public class Image {
     private Long id;
     private Long listingId;
-    private String imageURL;
+    private String imageUrl;
     private LocalDateTime createAt;
+
+    public Image(Long listingId, String imageUrl){
+        this.listingId = listingId;
+        this.imageUrl = imageUrl;
+    }
 }

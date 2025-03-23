@@ -18,5 +18,16 @@
         DELETE FROM image WHERE listing_id = #{listingId};
     </delete>
 
+    <select id="getImagesByListingId">
+        SELECT image_url FROm image
+        WHERE listing_id = #{listingId}
+    </select>
+
+    <insert id="insertImages">
+        <foreach collection="images" item="image" index="index" open="INSERT INTO image (listing_id, image_url)" separator="," close=";">
+            (#{image.listingId}, #{image.imageUrl})
+        </foreach>
+    </insert>
+
 
 </mapper>

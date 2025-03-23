@@ -1,9 +1,10 @@
 package com.example.listingservice.mapper;
 
 
+import com.example.feignapi.vo.FavoriteCard;
+import com.example.feignapi.vo.FavoriteListing;
 import com.example.feignapi.vo.ListingCard;
 import com.example.listingservice.dto.ListingSearchDTO;
-import com.example.listingservice.dto.ListingUpdateFavoriteDTO;
 import com.example.listingservice.model.Listing;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -35,5 +36,5 @@ public interface ListingMapper {
 
     void updateListingRating(Long id, Double rating);
 
-    void updateFavorite(Long id, ListingUpdateFavoriteDTO isFavorite);
+    List<FavoriteListing> getFavoriteListings(List<Long> listingIds);
 }

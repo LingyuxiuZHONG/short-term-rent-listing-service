@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD MyBatis Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.listingservice.mapper.ListingTypeMapper">
+    <select id="getNameOfType">
+        SELECT name FROM listing_type
+        WHERE id = #{id};
+    </select>
+
+    <select id="getListingTypes">
+        SELECT id, name FROM listing_type
+    </select>
+</mapper>

@@ -26,7 +26,6 @@ public class ListingCreateDTO {
     @NotNull(message = "房东ID不能为空")
     private Long hostId;
 
-    private String status;
 
     @NotNull(message = "房源类型不能为空")
     private Long listingTypeId;
@@ -34,5 +33,17 @@ public class ListingCreateDTO {
     @NotNull(message = "价格不能为空")
     @Positive(message = "价格必须为正数")
     private BigDecimal price;
+
+    @NotNull(message = "最大人数不能为空")
+    @Positive(message = "最大人数必须为正数")
+    private Integer maxGuests;
+
+    @NotNull(message = "房间数不能为空")
+    @Positive(message = "房间数必须为正数")
+    private Integer bedrooms;
+
+    @NotNull(message = "浴室数不能为空")
+    @Positive(message = "浴室数必须为正数")
+    private Integer bathrooms;
 
 }

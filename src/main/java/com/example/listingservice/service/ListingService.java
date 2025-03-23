@@ -1,10 +1,11 @@
 package com.example.listingservice.service;
 
+import com.example.feignapi.vo.FavoriteListing;
 import com.example.feignapi.vo.ListingCard;
+import com.example.feignapi.vo.ListingDetail;
 import com.example.listingservice.dto.ListingCreateDTO;
 import com.example.listingservice.dto.ListingSearchDTO;
 import com.example.listingservice.dto.ListingUpdateDTO;
-import com.example.listingservice.dto.ListingUpdateFavoriteDTO;
 
 import java.util.List;
 
@@ -15,7 +16,8 @@ public interface ListingService {
 
     ListingCard updateListing(Long listingId, ListingUpdateDTO listingUpdateDTO);
 
-    ListingCard getListingById(Long listingId);
+    ListingDetail getListingById(Long listingId);
+
 
     List<ListingCard> getAllListings();
 
@@ -23,5 +25,5 @@ public interface ListingService {
 
     void updateListingRating(Long id, Double rating);
 
-    void updateFavorite(Long id, ListingUpdateFavoriteDTO isFavorite);
+    List<FavoriteListing> getFavoriteListings(List<Long> listingId);
 }

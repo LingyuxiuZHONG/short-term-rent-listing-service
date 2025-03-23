@@ -20,8 +20,8 @@
 
     <!-- 创建房源 -->
     <insert id="insert" parameterType="com.example.listingservice.model.Listing" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO listing (title, description, address, latitude, longitude, listing_type_id, host_id, price)
-        VALUES (#{title}, #{description}, #{address}, #{latitude}, #{longitude}, #{listingTypeId}, #{hostId}, #{price});
+        INSERT INTO listing (title, description, address, latitude, longitude, listing_type_id, host_id, price, max_guests, bedrooms, bathrooms)
+        VALUES (#{title}, #{description}, #{address}, #{latitude}, #{longitude}, #{listingTypeId}, #{hostId}, #{price}, #{maxGuests}, #{bedrooms}, #{bathrooms});
     </insert>
 
     <!-- 更新房源 -->
@@ -124,12 +124,16 @@
     </select>
 
 
-    <update id="updateFavorite">
-        UPDATE listing
-        <set>
-            is_favorite = #{isFavorite}
-        </set>
-        WHERE id = #{id}
-    </update>
+    <select id="getFavoriteListings" parameterType="java.util.List" resultType="com.example.feignapi.vo.FavoriteListing">
+        SELECT id as listingId, title, address, price, rating
+        FROM listing
+        WHERE id IN
+        <foreach collection="listingIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+
+
 
 </mapper>

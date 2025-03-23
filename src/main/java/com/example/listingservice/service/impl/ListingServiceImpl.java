@@ -4,18 +4,20 @@ import com.example.common.exception.BusinessException;
 import com.example.feignapi.clients.BookingClient;
 import com.example.feignapi.clients.UserClient;
 import com.example.feignapi.dto.CheckDateAvailabilityDTO;
+import com.example.feignapi.vo.FavoriteListing;
 import com.example.feignapi.vo.ListingCard;
+import com.example.feignapi.vo.ListingDetail;
 import com.example.feignapi.vo.UserVO;
 import com.example.listingservice.dto.ListingCreateDTO;
 import com.example.listingservice.dto.ListingSearchDTO;
 import com.example.listingservice.dto.ListingUpdateDTO;
-import com.example.listingservice.dto.ListingUpdateFavoriteDTO;
-import com.example.listingservice.mapper.ListingMapper;
-import com.example.listingservice.mapper.PriceHistoryMapper;
+import com.example.listingservice.mapper.*;
 import com.example.listingservice.model.Listing;
 import com.example.listingservice.model.PriceHistory;
 import com.example.listingservice.service.ImageService;
+import com.example.listingservice.service.ListingAmenityService;
 import com.example.listingservice.service.ListingService;
+import com.example.listingservice.service.PriceHistoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -38,9 +40,15 @@ public class ListingServiceImpl implements ListingService {
 
     private final ImageService imageService;
 
+    private final ListingAmenityService listingAmenityService;
+
     private final ListingMapper listingMapper;
 
-    private final PriceHistoryMapper priceHistoryMapper;
+
+    private final PriceHistoryService priceHistoryService;
+
+    private final ListingTypeMapper listingTypeMapper;
+
 
 
     @Transactional
@@ -49,14 +57,14 @@ public class ListingServiceImpl implements ListingService {
         log.info("创建房源开始，房东ID：{}", listingCreateDTO.getHostId());
 
         // 1. 检查房东是否存在
-        UserVO user = userClient.checkIfUserExists(listingCreateDTO.getHostId()).getBody().getData();
+        UserVO user = userClient.getUserById(listingCreateDTO.getHostId()).getBody().getData();
         if (user == null) {
             log.warn("房东不存在，无法创建房源，房东ID：{}", listingCreateDTO.getHostId());
             throw new BusinessException("房东不存在，无法创建房源");
         }
 
         // 2. 检查房东角色权限
-        if (user.getRoleId() == 1) {
+        if (user.getRoleType() == 1) {
             log.warn("房东角色无权限创建房源，房东ID：{}", listingCreateDTO.getHostId());
             throw new BusinessException("此角色无权限创建房源");
         }
@@ -69,13 +77,10 @@ public class ListingServiceImpl implements ListingService {
         log.info("房源创建成功，房源ID：{}", listing.getId());
 
         // 创建价格历史
-        PriceHistory priceHistory = new PriceHistory();
-        priceHistory.setListingId(listing.getId());
-        priceHistory.setPrice(listingCreateDTO.getPrice());
-        priceHistoryMapper.insert(priceHistory);
+        priceHistoryService.insert(listing.getId(),listing.getPrice());
         log.info("房源价格历史记录已插入，房源ID：{}", listing.getId());
 
-        return convertToListingVO(listing);
+        return convertToListingCard(listing);
     }
 
     @Transactional
@@ -138,21 +143,18 @@ public class ListingServiceImpl implements ListingService {
             listing.setPrice(listingUpdateDTO.getPrice());
 
             // 记录价格历史
-            PriceHistory priceHistory = new PriceHistory();
-            priceHistory.setListingId(listingId);
-            priceHistory.setPrice(listingUpdateDTO.getPrice());
-            priceHistoryMapper.insert(priceHistory);
+            priceHistoryService.insert(listingId,listingUpdateDTO.getPrice());
             log.info("房源价格更新，房源ID：{}，新价格：{}", listingId, listingUpdateDTO.getPrice());
         }
 
         listingMapper.updateListing(listing);
         log.info("房源更新成功，房源ID：{}", listingId);
 
-        return convertToListingVO(listing);
+        return convertToListingCard(listing);
     }
 
     @Override
-    public ListingCard getListingById(Long listingId) {
+    public ListingDetail getListingById(Long listingId) {
         log.info("查询房源，房源ID：{}", listingId);
 
         // 查询房源
@@ -163,7 +165,7 @@ public class ListingServiceImpl implements ListingService {
         }
 
         log.info("房源查询成功，房源ID：{}", listingId);
-        return convertToListingVO(listing);
+        return convertToListingDetail(listing);
     }
 
     @Override
@@ -175,7 +177,7 @@ public class ListingServiceImpl implements ListingService {
 
         // 转换成 VO
         List<ListingCard> listingCards = listings.stream()
-                .map(this::convertToListingVO)
+                .map(this::convertToListingCard)
                 .collect(Collectors.toList());
 
         log.info("查询到所有房源，总数：{}", listingCards.size());
@@ -230,16 +232,37 @@ public class ListingServiceImpl implements ListingService {
     }
 
     @Override
-    public void updateFavorite(Long id, ListingUpdateFavoriteDTO isFavorite) {
+    public List<FavoriteListing> getFavoriteListings(List<Long> listingIds) {
 
-        listingMapper.updateFavorite(id,isFavorite);
+        return listingMapper.getFavoriteListings(listingIds);
     }
 
 
-    private ListingCard convertToListingVO(Listing listing) {
+    private ListingCard convertToListingCard(Listing listing) {
         ListingCard listingCard = new ListingCard();
         BeanUtils.copyProperties(listing, listingCard);
+
+        listingCard.setListingType(listingTypeMapper.getNameOfType(listing.getListingTypeId()));
+
         return listingCard;
+    }
+
+    private ListingDetail convertToListingDetail(Listing listing) {
+        ListingDetail listingDetail = new ListingDetail();
+        BeanUtils.copyProperties(listing, listingDetail);
+
+        listingDetail.setListingType(listingTypeMapper.getNameOfType(listing.getListingTypeId()));
+
+        listingDetail.setHost(userClient.getUserById(listing.getHostId()).getBody().getData());
+
+
+        List<String> amenities = listingAmenityService.getAmenitiesByListingId(listing.getId());
+        listingDetail.setAmenities(amenities);
+
+        List<String> imageUrls = imageService.getImagesUrlsByListingId(listing.getId());
+        listingDetail.setImages(imageUrls);
+
+        return listingDetail;
     }
 
 

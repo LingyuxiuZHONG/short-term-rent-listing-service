@@ -8,4 +8,5 @@ import java.util.List;
 @Mapper
 public interface AmenityMapper {
 
+    List<String> getAmenities(List<Long> amenityIds);
 }
