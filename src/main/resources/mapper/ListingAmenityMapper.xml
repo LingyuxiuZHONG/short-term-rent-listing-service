@@ -8,4 +8,13 @@
         SELECT amenity_id FROM listing_amenity
         WHERE listing_id = #{listingId}
     </select>
+
+    <insert id="addAmenities">
+        INSERT INTO listing_amenity (listing_id, amenity_id)
+        VALUES
+        <foreach collection="amenities" item="amenityId" separator=",">
+            (#{listingId}, #{amenityId})
+        </foreach>
+    </insert>
+
 </mapper>

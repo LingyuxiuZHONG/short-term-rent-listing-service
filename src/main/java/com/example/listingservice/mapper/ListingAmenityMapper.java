@@ -8,4 +8,6 @@ import java.util.List;
 @Mapper
 public interface ListingAmenityMapper {
     List<Long> getAmenityIdsByListingId(Long listingId);
+
+    void addAmenities(Long listingId, List<Long> amenities);
 }

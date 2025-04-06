@@ -66,7 +66,7 @@
         l.rating,
         l.bedrooms,
         l.bathrooms,
-        l.is_favorite,
+        l.max_guests,
         lt.name AS listingType
         FROM listing l
         LEFT JOIN listing_type lt ON l.listing_type_id = lt.id
@@ -76,6 +76,8 @@
             INNER JOIN amenity a ON la.amenity_id = a.id
         </if>
         WHERE 1=1
+        <!-- 最大人数 -->
+        AND l.max_guests >= #{guests}
         <!-- 地址搜索 -->
         <if test="address != null and address != ''">
             AND l.address LIKE CONCAT('%', #{address}, '%')
@@ -110,16 +112,15 @@
                 SELECT la.listing_id
                 FROM listing_amenity la
                 JOIN amenity a ON la.amenity_id = a.id
-                WHERE a.name IN
+                WHERE a.id IN
                 <foreach collection="filters.amenities" item="amenity" open="(" separator="," close=")">
                     #{amenity}
                 </foreach>
                 GROUP BY la.listing_id
-                HAVING COUNT(DISTINCT a.name) = #{filters.amenitiesCount}
+                HAVING COUNT(DISTINCT a.id) = #{filters.amenitiesCount}
             )
         </if>
         <!-- 默认状态为可用 -->
-        AND l.status = 1
         ORDER BY l.id
     </select>
 
@@ -131,6 +132,13 @@
         <foreach collection="listingIds" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
+    </select>
+
+
+    <select id="getListingsByHostId">
+        SELECT *
+        FROM listing
+        WHERE host_id = #{hostId}
     </select>
 
 

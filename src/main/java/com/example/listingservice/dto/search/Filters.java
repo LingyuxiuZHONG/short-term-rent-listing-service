@@ -11,7 +11,7 @@ public class Filters {
     private List<String> listingType;
     private String bedrooms;
     private String bathrooms;
-    private List<String> amenities;
+    private List<Long> amenities;
     private Integer amenitiesCount;
 
 }

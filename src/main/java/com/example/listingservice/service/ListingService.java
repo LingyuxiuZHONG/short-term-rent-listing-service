@@ -1,8 +1,6 @@
 package com.example.listingservice.service;
 
-import com.example.feignapi.vo.FavoriteListing;
-import com.example.feignapi.vo.ListingCard;
-import com.example.feignapi.vo.ListingDetail;
+import com.example.feignapi.vo.*;
 import com.example.listingservice.dto.ListingCreateDTO;
 import com.example.listingservice.dto.ListingSearchDTO;
 import com.example.listingservice.dto.ListingUpdateDTO;
@@ -26,4 +24,8 @@ public interface ListingService {
     void updateListingRating(Long id, Double rating);
 
     List<FavoriteListing> getFavoriteListings(List<Long> listingId);
+
+    List<ListingManagementCard> getListingsByHostId(Long hostId);
+
+    ListingSummary getListingSummary(Long id);
 }

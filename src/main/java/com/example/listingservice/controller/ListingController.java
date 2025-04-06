@@ -2,11 +2,11 @@ package com.example.listingservice.controller;
 
 
 import com.example.common.ApiResponse;
-import com.example.feignapi.clients.ListingClient;
 import com.example.feignapi.vo.*;
 import com.example.listingservice.dto.ListingCreateDTO;
 import com.example.listingservice.dto.ListingSearchDTO;
 import com.example.listingservice.dto.ListingUpdateDTO;
+import com.example.listingservice.service.AmenityService;
 import com.example.listingservice.service.ListingService;
 import com.example.listingservice.service.ListingTypeService;
 import jakarta.validation.Valid;
@@ -24,6 +24,8 @@ public class ListingController {
     private final ListingService listingService;
 
     private final ListingTypeService listingTypeService;
+
+    private final AmenityService amenityService;
 
 
     @PostMapping("")
@@ -52,10 +54,6 @@ public class ListingController {
         return ResponseEntity.ok(ApiResponse.success("查询成功", listingDetail));
     }
 
-    @GetMapping("/test")
-    public ResponseEntity<ApiResponse<String>> getListingById() {
-        return ResponseEntity.ok(ApiResponse.success("成功"));
-    }
 
     @GetMapping("")
     public ResponseEntity<ApiResponse<List<ListingCard>>> getAllListings() {
@@ -91,7 +89,26 @@ public class ListingController {
         return ResponseEntity.ok(ApiResponse.success("查询成功", list));
     }
 
+    @GetMapping("/amenities")
+    ResponseEntity<ApiResponse<List<AmenityVO>>> getAmenities(){
+        List<AmenityVO> list = amenityService.getAmenities();
+        return ResponseEntity.ok(ApiResponse.success("查询成功", list));
+    }
 
+
+    @GetMapping("/{id}/summary")
+    ResponseEntity<ApiResponse<ListingSummary>> getListingSummary(@PathVariable Long id){
+        ListingSummary list = listingService.getListingSummary(id);
+        return ResponseEntity.ok(ApiResponse.success("查询成功", list));
+    }
+
+
+
+    @GetMapping("/landlord/{hostId}")
+    public ResponseEntity<ApiResponse<List<ListingManagementCard>>> getListingsByLandlordId(@PathVariable Long hostId) {
+        List<ListingManagementCard> list = listingService.getListingsByHostId(hostId);
+        return ResponseEntity.ok(ApiResponse.success("查询成功", list));
+    }
 
 
 }

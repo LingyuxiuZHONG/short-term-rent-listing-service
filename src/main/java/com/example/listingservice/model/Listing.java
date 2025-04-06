@@ -24,4 +24,7 @@ public class Listing {
     private Integer bathrooms;
     private Double rating;
     private Integer maxGuests;
+    private String checkInInstructions;
+    private String cancelPolicy;
+
 }

@@ -23,11 +23,17 @@
         WHERE listing_id = #{listingId}
     </select>
 
-    <insert id="insertImages">
-        <foreach collection="images" item="image" index="index" open="INSERT INTO image (listing_id, image_url)" separator="," close=";">
-            (#{image.listingId}, #{image.imageUrl})
+    <insert id="insertImages" parameterType="java.util.List">
+        INSERT INTO image (listing_id, image_url)
+        VALUES
+        <foreach collection="list" item="item" index="index" separator=",">
+            (
+                #{item.listingId},
+                #{item.imageUrl}
+            )
         </foreach>
     </insert>
+
 
 
 </mapper>

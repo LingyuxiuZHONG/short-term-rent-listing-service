@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 public class ListingCreateDTO {
@@ -45,5 +46,14 @@ public class ListingCreateDTO {
     @NotNull(message = "浴室数不能为空")
     @Positive(message = "浴室数必须为正数")
     private Integer bathrooms;
+
+    private String checkInInstructions;
+
+    @NotNull(message = "取消政策不能为空")
+    private Integer cancelPolicy;
+
+    private List<Long> amenities;
+
+    private List<String> rules;
 
 }

@@ -11,7 +11,8 @@ import java.util.Map;
 public class ListingSearchDTO {
     private String address;
     private Map<String, LocalDateTime> dateRange;
-    private Map<String,Integer> guests;
+    private Integer guests;
     private Filters filters;
+    private Long userId;
 
 }

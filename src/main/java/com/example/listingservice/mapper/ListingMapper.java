@@ -1,7 +1,6 @@
 package com.example.listingservice.mapper;
 
 
-import com.example.feignapi.vo.FavoriteCard;
 import com.example.feignapi.vo.FavoriteListing;
 import com.example.feignapi.vo.ListingCard;
 import com.example.listingservice.dto.ListingSearchDTO;
@@ -37,4 +36,6 @@ public interface ListingMapper {
     void updateListingRating(Long id, Double rating);
 
     List<FavoriteListing> getFavoriteListings(List<Long> listingIds);
+
+    List<Listing> getListingsByHostId(Long hostId);
 }

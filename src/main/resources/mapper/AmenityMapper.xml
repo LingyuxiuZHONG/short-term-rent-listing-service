@@ -2,12 +2,18 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD MyBatis Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.example.listingservice.mapper.AmenityMapper">
-    <select id="getAmenities" resultType="String">
+    <select id="getAmenitiesByIds" resultType="String">
         SELECT name
         FROM amenity
-        WHERE id IN
-        <foreach collection="amenityIds" item="item" open="(" separator="," close=")">
-            #{item}
-        </foreach>
+        WHERE id IN (
+            <foreach collection="amenityIds" item="item" separator="," >
+                #{item}
+            </foreach>
+        )
     </select>
+
+    <select id="getAmenities" >
+        SELECT * FROM amenity
+    </select>
+
 </mapper>

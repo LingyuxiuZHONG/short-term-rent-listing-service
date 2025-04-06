@@ -2,30 +2,23 @@ package com.example.listingservice.service.impl;
 
 import com.example.common.exception.BusinessException;
 import com.example.feignapi.clients.BookingClient;
+import com.example.feignapi.clients.ReviewClient;
 import com.example.feignapi.clients.UserClient;
 import com.example.feignapi.dto.CheckDateAvailabilityDTO;
-import com.example.feignapi.vo.FavoriteListing;
-import com.example.feignapi.vo.ListingCard;
-import com.example.feignapi.vo.ListingDetail;
-import com.example.feignapi.vo.UserVO;
+import com.example.feignapi.vo.*;
 import com.example.listingservice.dto.ListingCreateDTO;
 import com.example.listingservice.dto.ListingSearchDTO;
 import com.example.listingservice.dto.ListingUpdateDTO;
 import com.example.listingservice.mapper.*;
 import com.example.listingservice.model.Listing;
-import com.example.listingservice.model.PriceHistory;
-import com.example.listingservice.service.ImageService;
-import com.example.listingservice.service.ListingAmenityService;
-import com.example.listingservice.service.ListingService;
-import com.example.listingservice.service.PriceHistoryService;
+import com.example.listingservice.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -38,7 +31,11 @@ public class ListingServiceImpl implements ListingService {
 
     private final BookingClient bookingClient;
 
+    private final ReviewClient reviewClient;
+
     private final ImageService imageService;
+
+    private final RuleService ruleService;
 
     private final ListingAmenityService listingAmenityService;
 
@@ -48,6 +45,7 @@ public class ListingServiceImpl implements ListingService {
     private final PriceHistoryService priceHistoryService;
 
     private final ListingTypeMapper listingTypeMapper;
+
 
 
 
@@ -65,7 +63,7 @@ public class ListingServiceImpl implements ListingService {
 
         // 2. 检查房东角色权限
         if (user.getRoleType() == 1) {
-            log.warn("房东角色无权限创建房源，房东ID：{}", listingCreateDTO.getHostId());
+            log.warn("角色无权限创建房源，ID：{}", listingCreateDTO.getHostId());
             throw new BusinessException("此角色无权限创建房源");
         }
 
@@ -79,6 +77,18 @@ public class ListingServiceImpl implements ListingService {
         // 创建价格历史
         priceHistoryService.insert(listing.getId(),listing.getPrice());
         log.info("房源价格历史记录已插入，房源ID：{}", listing.getId());
+
+        // 设置设施
+        if(listingCreateDTO.getAmenities() != null && !listingCreateDTO.getAmenities().isEmpty()){
+            listingAmenityService.addAmenities(listing.getId(), listingCreateDTO.getAmenities());
+            log.info("房源设施记录已插入，房源ID：{}", listing.getId());
+        }
+
+        // 设置入住规则
+        if(listingCreateDTO.getRules() != null && !listingCreateDTO.getRules().isEmpty()){
+            ruleService.addRules(listing.getId(), listingCreateDTO.getRules());
+            log.info("房源入住规则记录已插入，房源ID：{}", listing.getId());
+        }
 
         return convertToListingCard(listing);
     }
@@ -186,30 +196,44 @@ public class ListingServiceImpl implements ListingService {
 
     @Override
     public List<ListingCard> searchListings(ListingSearchDTO listingSearchDTO) {
-        // 1. 根据除dateRange外的条件先筛选房源
-        if(listingSearchDTO.getFilters() != null && listingSearchDTO.getFilters().getAmenities() != null){
+        // 1. 处理筛选条件
+        if (listingSearchDTO.getFilters() != null && listingSearchDTO.getFilters().getAmenities() != null) {
             listingSearchDTO.getFilters().setAmenitiesCount(listingSearchDTO.getFilters().getAmenities().size());
         }
         List<ListingCard> filteredListings = listingMapper.searchListingsByFilters(listingSearchDTO);
 
-        // 2. 如果没有日期范围条件，直接返回筛选结果
+        // 2. 查询用户收藏的房源ID
+        Long userId = listingSearchDTO.getUserId();  // 确保 SearchDTO 里有 userId
+        Set<Long> favoriteListingIds = new HashSet<>();
+        if (userId != null) {
+            favoriteListingIds = new HashSet<>(userClient.getFavoriteListingIds(userId).getBody().getData());
+        }
+
+        // 3. 处理图片和收藏状态
+        for (ListingCard listingCard : filteredListings) {
+            List<String> images = imageService.getImagesUrlsByListingId(listingCard.getId());
+            listingCard.setImage(images.isEmpty() ? null : images.get(0));
+            listingCard.setIsFavorite(favoriteListingIds.contains(listingCard.getId())); // 设置是否收藏
+        }
+
+        // 4. 如果没有日期范围，直接返回
         if (listingSearchDTO.getDateRange() == null ||
                 listingSearchDTO.getDateRange().get("from") == null ||
                 listingSearchDTO.getDateRange().get("to") == null) {
             return filteredListings;
         }
 
-        // 3. 获取这些房源ID
+        // 5. 获取这些房源ID
         List<Long> listingIds = filteredListings.stream()
                 .map(ListingCard::getId)
                 .collect(Collectors.toList());
 
-        // 4. 如果列表为空，直接返回空结果
+        // 6. 如果列表为空，直接返回空结果
         if (listingIds.isEmpty()) {
             return Collections.emptyList();
         }
 
-        // 5. 调用booking微服务检查可用性
+        // 7. 调用 booking 微服务检查房源日期
         CheckDateAvailabilityDTO checkDateAvailabilityDTO = new CheckDateAvailabilityDTO(
                 listingIds,
                 listingSearchDTO.getDateRange().get("from"),
@@ -217,14 +241,20 @@ public class ListingServiceImpl implements ListingService {
         );
         List<Long> availableListingIds = bookingClient.checkDateAvailability(checkDateAvailabilityDTO).getBody().getData();
 
-        // 6. 根据可用ID筛选最终列表
+        // 8. 根据可用ID筛选最终列表
         List<ListingCard> availableListings = filteredListings.stream()
                 .filter(listing -> availableListingIds.contains(listing.getId()))
                 .collect(Collectors.toList());
 
-        // 7. 转换为VO返回
+        // 9. 查询评论数
+        for (ListingCard listingCard : availableListings) {
+            Integer reviewCount = reviewClient.getReviewCountByListingId(listingCard.getId()).getBody().getData();
+            listingCard.setReviewCount(reviewCount);
+        }
+
         return availableListings;
     }
+
 
     @Override
     public void updateListingRating(Long id, Double rating) {
@@ -233,8 +263,53 @@ public class ListingServiceImpl implements ListingService {
 
     @Override
     public List<FavoriteListing> getFavoriteListings(List<Long> listingIds) {
+        List<FavoriteListing> favoriteListings = listingMapper.getFavoriteListings(listingIds);
+        for(FavoriteListing listing : favoriteListings){
+            List<String> imagesUrlsByListingId = imageService.getImagesUrlsByListingId(listing.getListingId());
+            listing.setImages(imagesUrlsByListingId);
+        }
+        return favoriteListings;
+    }
 
-        return listingMapper.getFavoriteListings(listingIds);
+    @Override
+    public List<ListingManagementCard> getListingsByHostId(Long hostId) {
+
+        List<Listing> list = listingMapper.getListingsByHostId(hostId);
+        List<ListingManagementCard> listingManagementCardList = new ArrayList<>();
+        for(Listing listing : list){
+            ListingManagementCard listingManagementCard = convertToListingManagementCard(listing);
+
+            listingManagementCard.setImages(imageService.getImagesUrlsByListingId(listing.getId()));
+
+            listingManagementCard.setAmenities(listingAmenityService.getAmenitiesByListingId(listing.getId()));
+
+            listingManagementCard.setRules(ruleService.getRulesByListingId(listing.getId()));
+
+            List<BookingVO> bookingList = bookingClient.getBookingsByListingId(listing.getId()).getBody().getData();
+            listingManagementCard.setBookings(bookingList);
+
+            listingManagementCardList.add(listingManagementCard);
+
+
+        }
+        return listingManagementCardList;
+
+    }
+
+    @Override
+    public ListingSummary getListingSummary(Long id) {
+
+        Listing listing = listingMapper.getListingById(id);
+
+        return convertToListingSummary(listing);
+    }
+
+    private ListingSummary convertToListingSummary(Listing listing) {
+        ListingSummary listingSummary = new ListingSummary();
+        BeanUtils.copyProperties(listing,listingSummary);
+        List<String> imagesUrlsByListingId = imageService.getImagesUrlsByListingId(listing.getId());
+        listingSummary.setImage(imagesUrlsByListingId.get(0));
+        return listingSummary;
     }
 
 
@@ -245,6 +320,15 @@ public class ListingServiceImpl implements ListingService {
         listingCard.setListingType(listingTypeMapper.getNameOfType(listing.getListingTypeId()));
 
         return listingCard;
+    }
+
+    private ListingManagementCard convertToListingManagementCard(Listing listing) {
+        ListingManagementCard listingManagementCard = new ListingManagementCard();
+        BeanUtils.copyProperties(listing, listingManagementCard);
+
+        listingManagementCard.setListingType(listingTypeMapper.getNameOfType(listing.getListingTypeId()));
+
+        return listingManagementCard;
     }
 
     private ListingDetail convertToListingDetail(Listing listing) {
@@ -261,6 +345,9 @@ public class ListingServiceImpl implements ListingService {
 
         List<String> imageUrls = imageService.getImagesUrlsByListingId(listing.getId());
         listingDetail.setImages(imageUrls);
+
+        List<String> rules = ruleService.getRulesByListingId(listing.getId());
+        listingDetail.setRules(rules);
 
         return listingDetail;
     }
